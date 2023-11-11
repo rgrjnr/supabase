@@ -6,10 +6,16 @@ import { Alert } from 'ui'
 
 export const COLOR_MAP = {
   white: { bar: 'fill-foreground', marker: 'bg-foreground' },
-  green: { bar: 'fill-green-1000', marker: 'bg-green-1000' },
-  blue: { bar: 'fill-blue-1000', marker: 'bg-blue-1000' },
-  yellow: { bar: 'fill-amber-1000', marker: 'bg-amber-1000' },
-  orange: { bar: 'fill-orange-1000', marker: 'bg-orange-1000' },
+  green: { bar: 'fill-green-800', marker: 'bg-green-800' },
+  'dark-green': { bar: 'fill-green-1000', marker: 'bg-green-1000' },
+  blue: { bar: 'fill-blue-900', marker: 'bg-blue-900' },
+  yellow: { bar: 'fill-yellow-800', marker: 'bg-yellow-800' },
+  'dark-yellow': { bar: 'fill-yellow-1000', marker: 'bg-yellow-1000' },
+  orange: { bar: 'fill-orange-800', marker: 'bg-orange-800' },
+  'dark-orange': { bar: 'fill-orange-1000', marker: 'bg-orange-1100' },
+  red: { bar: 'fill-red-800', marker: 'bg-red-800' },
+  'dark-red': { bar: 'fill-red-1000', marker: 'bg-red-1000' },
+  purple: { bar: 'fill-purple-900', marker: 'bg-purple-900' },
 }
 
 export const Y_DOMAIN_CEILING_MULTIPLIER = 4 / 3
@@ -23,14 +29,25 @@ export const USAGE_STATUS = {
 export interface Attribute {
   key: string
   name?: string
-  color: 'white' | 'blue' | 'green' | 'yellow' | 'orange'
+  color:
+    | 'white'
+    | 'blue'
+    | 'green'
+    | 'yellow'
+    | 'orange'
+    | 'purple'
+    | 'red'
+    | 'dark-red'
+    | 'dark-orange'
+    | 'dark-yellow'
+    | 'dark-green'
 }
 export interface CategoryAttribute {
   anchor: string
   key: string // Property from organization usage
   attributes: Attribute[] // For querying against stats-daily / infra-monitoring
   name: string
-  unit: 'bytes' | 'absolute' | 'percentage'
+  unit: 'bytes' | 'absolute' | 'percentage' | 'hours'
   links?: {
     name: string
     url: string
@@ -42,16 +59,37 @@ export interface CategoryAttribute {
   additionalInfo?: (subscription?: OrgSubscription, usage?: OrgUsageResponse) => JSX.Element | null
 }
 
-export type CategoryMetaKey = 'bandwidth' | 'sizeCount' | 'activity'
+export type CategoryMetaKey = 'bandwidth' | 'sizeCount' | 'activity' | 'compute'
 
 export interface CategoryMeta {
-  key: 'bandwidth' | 'sizeCount' | 'activity'
+  key: CategoryMetaKey
   name: string
   description: string
   attributes: CategoryAttribute[]
 }
 
 export const USAGE_CATEGORIES: CategoryMeta[] = [
+  {
+    key: 'compute',
+    name: 'Compute',
+    description: 'Lorem ipsum',
+    attributes: [
+      {
+        anchor: 'compute',
+        key: PricingMetric.EGRESS,
+        attributes: [
+          { key: EgressType.AUTH, name: 'Auth Egress', color: 'yellow' },
+          { key: EgressType.DATABASE, name: 'Database Egress', color: 'green' },
+          { key: EgressType.STORAGE, name: 'Storage Egress', color: 'blue' },
+          { key: EgressType.REALTIME, name: 'Realtime Egress', color: 'orange' },
+        ],
+        name: 'Compute Runtime Hours',
+        unit: 'hours',
+        description: 'Lorem ipsum.',
+        chartDescription: 'The data refreshes every 15 minutes.',
+      },
+    ],
+  },
   {
     key: 'bandwidth',
     name: 'Bandwidth',

@@ -30,6 +30,7 @@ export enum PricingMetric {
 }
 
 export enum ComputeUsageMetric {
+  COMPUTE_HOURS_BRANCH = 'COMPUTE_HOURS_BRANCH',
   COMPUTE_HOURS_XS = 'COMPUTE_HOURS_XS',
   COMPUTE_HOURS_SM = 'COMPUTE_HOURS_SM',
   COMPUTE_HOURS_MD = 'COMPUTE_HOURS_MD',
@@ -40,6 +41,33 @@ export enum ComputeUsageMetric {
   COMPUTE_HOURS_8XL = 'COMPUTE_HOURS_8XL',
   COMPUTE_HOURS_12XL = 'COMPUTE_HOURS_12XL',
   COMPUTE_HOURS_16XL = 'COMPUTE_HOURS_16XL',
+}
+
+export const computeUsageMetricLabel = (computeUsageMetric: ComputeUsageMetric) => {
+  switch (computeUsageMetric) {
+    case 'COMPUTE_HOURS_BRANCH':
+      return 'Compute Hours Branch'
+    case 'COMPUTE_HOURS_XS':
+      return 'Compute Hours XS'
+    case 'COMPUTE_HOURS_SM':
+      return 'Compute Hours Small'
+    case 'COMPUTE_HOURS_MD':
+      return 'Compute Hours Medium'
+    case 'COMPUTE_HOURS_L':
+      return 'Compute Hours Large'
+    case 'COMPUTE_HOURS_XL':
+      return 'Compute Hours XL'
+    case 'COMPUTE_HOURS_2XL':
+      return 'Compute Hours 2XL'
+    case 'COMPUTE_HOURS_4XL':
+      return 'Compute Hours 4XL'
+    case 'COMPUTE_HOURS_8XL':
+      return 'Compute Hours 8XL'
+    case 'COMPUTE_HOURS_12XL':
+      return 'Compute Hours 12XL'
+    case 'COMPUTE_HOURS_16XL':
+      return 'Compute Hours 16XL'
+  }
 }
 
 export type OrgDailyStatsVariables = {
