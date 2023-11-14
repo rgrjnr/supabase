@@ -154,9 +154,9 @@ const Compute = ({ orgSlug, projectRef, subscription, startDate, endDate }: Comp
                 </div>
 
                 {attributeKeysWithData.map((key) => (
-                  <div key={key} className="flex items-center justify-between">
+                  <div key={key} className="flex items-center justify-between border-b last:border-b-0 space-y-1">
                     <p className="text-xs text-foreground-light">
-                      {computeUsageMetricLabel(key)} usage in period
+                      <span className='font-medium'>{computeUsageMetricLabel(key)}</span> Compute Hours usage in period
                     </p>
                     <p className="text-xs">
                       {chartData.reduce((prev, cur) => prev + ((cur[key] as number) ?? 0), 0)} hours

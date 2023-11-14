@@ -43,7 +43,7 @@ const BillingMetric = ({ idx, slug, metric, usage, subscription }: BillingMetric
       ? `${usageMeta?.pricing_free_units ?? 0} GB`
       : usageMeta?.pricing_free_units?.toLocaleString()
   const percentageLabel = `${(usageRatio * 100).toFixed(2)}%`
-  const usageLabel = `${usageCurrentLabel} ${hasLimit ? `of ${usageLimitLabel}` : ''}`
+  const usageLabel = `${usageCurrentLabel} ${hasLimit ? `/ ${usageLimitLabel}` : ''}`
 
   return (
     <div
@@ -62,7 +62,7 @@ const BillingMetric = ({ idx, slug, metric, usage, subscription }: BillingMetric
             <IconChevronRight
               strokeWidth={1.5}
               size={16}
-              className="transition opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0"
+              className="transition"
             />
           </div>
         </Link>

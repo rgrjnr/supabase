@@ -46,27 +46,27 @@ export enum ComputeUsageMetric {
 export const computeUsageMetricLabel = (computeUsageMetric: ComputeUsageMetric) => {
   switch (computeUsageMetric) {
     case 'COMPUTE_HOURS_BRANCH':
-      return 'Compute Hours Branch'
+      return 'Branches'
     case 'COMPUTE_HOURS_XS':
-      return 'Compute Hours XS'
+      return 'Starter'
     case 'COMPUTE_HOURS_SM':
-      return 'Compute Hours Small'
+      return 'Small'
     case 'COMPUTE_HOURS_MD':
-      return 'Compute Hours Medium'
+      return 'Medium'
     case 'COMPUTE_HOURS_L':
-      return 'Compute Hours Large'
+      return 'Large'
     case 'COMPUTE_HOURS_XL':
-      return 'Compute Hours XL'
+      return 'XL'
     case 'COMPUTE_HOURS_2XL':
-      return 'Compute Hours 2XL'
+      return '2XL'
     case 'COMPUTE_HOURS_4XL':
-      return 'Compute Hours 4XL'
+      return '4XL'
     case 'COMPUTE_HOURS_8XL':
-      return 'Compute Hours 8XL'
+      return '8XL'
     case 'COMPUTE_HOURS_12XL':
-      return 'Compute Hours 12XL'
+      return '12XL'
     case 'COMPUTE_HOURS_16XL':
-      return 'Compute Hours 16XL'
+      return '16XL'
   }
 }
 
