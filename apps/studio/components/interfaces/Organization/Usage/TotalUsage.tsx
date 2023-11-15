@@ -83,19 +83,26 @@ const TotalUsage = ({
         {isErrorUsage && <AlertError subject="Failed to retrieve usage data" error={usageError} />}
 
         {isSuccessUsage && (
-          <div className="grid grid-cols-12">
-            {BILLING_BREAKDOWN_METRICS.map((metric, i) => {
-              return (
-                <BillingMetric
-                  idx={i}
-                  key={metric.key}
-                  slug={orgSlug}
-                  metric={metric}
-                  usage={usage}
-                  subscription={subscription!}
-                />
-              )
-            })}
+          <div>
+            <p className="text-sm">
+              You have not exceeded your{' '}
+              <span className="font-medium">{subscription?.plan.name}</span> plan quota in this
+              billing cycle.
+            </p>
+            <div className="grid grid-cols-12 mt-3">
+              {BILLING_BREAKDOWN_METRICS.map((metric, i) => {
+                return (
+                  <BillingMetric
+                    idx={i}
+                    key={metric.key}
+                    slug={orgSlug}
+                    metric={metric}
+                    usage={usage}
+                    subscription={subscription!}
+                  />
+                )
+              })}
+            </div>
           </div>
         )}
       </SectionContent>

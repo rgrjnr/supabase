@@ -33,7 +33,6 @@ const Compute = ({ orgSlug, projectRef, subscription, startDate, endDate }: Comp
       period_start: '2023-11-10',
       id: '2',
       loopId: 2,
-      COMPUTE_HOURS_BRANCH: 24,
       COMPUTE_HOURS_XS: 24,
       COMPUTE_HOURS_MD: 12,
     },
@@ -154,7 +153,7 @@ const Compute = ({ orgSlug, projectRef, subscription, startDate, endDate }: Comp
                 </div>
 
                 {attributeKeysWithData.map((key) => (
-                  <div key={key} className="flex items-center justify-between border-b last:border-b-0 space-y-1">
+                  <div key={key} className="flex items-center justify-between border-b last:border-b-0 py-1 last:py-0">
                     <p className="text-xs text-foreground-light">
                       <span className='font-medium'>{computeUsageMetricLabel(key)}</span> Compute Hours usage in period
                     </p>

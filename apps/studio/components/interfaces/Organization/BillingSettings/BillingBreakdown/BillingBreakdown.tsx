@@ -53,7 +53,7 @@ const BillingBreakdown = () => {
 
         {invoiceFeatureEnabled && (
           <>
-            <p className="!mt-10 text-sm">Upcoming cost for next invoice</p>
+            <p className="text-sm">Upcoming cost for next invoice</p>
             <p className="text-sm text-foreground-light">
               The following table shows your upcoming costs. Depending on your usage, the final
               amount may vary. Next invoice on{' '}

@@ -26,7 +26,7 @@ const BillingMetric = ({ idx, slug, metric, usage, subscription }: BillingMetric
       ? (usageMeta?.usage ?? 0) / (usageMeta?.pricing_free_units ?? 0)
       : 0
 
-  const usageFee = subscription?.usage_fees?.find((item) => item.metric === metric.key)
+  const usageFee = subscription?.usage_fees?.find((item) => item.metric === metric.key)!
   const isUsageBillingEnabled = subscription?.usage_billing_enabled
   const largeNumberFormatter = new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 })
 
@@ -43,7 +43,8 @@ const BillingMetric = ({ idx, slug, metric, usage, subscription }: BillingMetric
       ? `${usageMeta?.pricing_free_units ?? 0} GB`
       : usageMeta?.pricing_free_units?.toLocaleString()
   const percentageLabel = `${(usageRatio * 100).toFixed(2)}%`
-  const usageLabel = `${usageCurrentLabel} ${hasLimit ? `/ ${usageLimitLabel}` : ''}`
+  const usageLabel =
+    usageMeta?.available_in_plan === false ? 'Unavailable in plan' : usageCurrentLabel
 
   return (
     <div
@@ -54,18 +55,92 @@ const BillingMetric = ({ idx, slug, metric, usage, subscription }: BillingMetric
       )}
     >
       <div className="flex items-center justify-between">
-        <Link href={`/org/${slug}/usage#${metric.anchor}`}>
-          <div className="group flex items-center space-x-2">
-            <p className="text-sm text-foreground-light group-hover:text-foreground transition cursor-pointer">
-              {metric.name}
-            </p>
-            <IconChevronRight
-              strokeWidth={1.5}
-              size={16}
-              className="transition"
-            />
+        <div>
+          <Link href={`/org/${slug}/usage#${metric.anchor}`}>
+            <div className="group flex items-center space-x-2">
+              <p className="text-sm text-foreground-light group-hover:text-foreground transition cursor-pointer">
+                {metric.name}
+              </p>
+              <IconChevronRight strokeWidth={1.5} size={16} className="transition" />
+            </div>
+          </Link>
+          <span className="text-sm">{usageLabel}</span>
+        </div>
+
+        {usageMeta?.available_in_plan ? (
+          <div>
+            <Tooltip.Root delayDuration={0}>
+              <Tooltip.Trigger>
+                <svg className="h-8 w-8 -rotate-90 transform">
+                  <circle
+                    cx={15}
+                    cy={15}
+                    r={12}
+                    fill="transparent"
+                    stroke="currentColor"
+                    strokeWidth={4}
+                    className="text-background-surface-300"
+                  />
+                  <circle
+                    cx={15}
+                    cy={15}
+                    r={12}
+                    fill="transparent"
+                    stroke="currentColor"
+                    strokeDasharray={75.398}
+                    strokeDashoffset="calc(75.39822 - 35 / 100 * 75.39822)"
+                    strokeWidth={4}
+                    className="text-gray-dark-800"
+                  />
+                </svg>
+              </Tooltip.Trigger>
+              <Tooltip.Portal>
+                <Tooltip.Content side="bottom">
+                  <Tooltip.Arrow className="radix-tooltip-arrow" />
+                  <div
+                    className={[
+                      'rounded bg-alternative py-1 px-2 leading-none shadow',
+                      'border border-background',
+                    ].join(' ')}
+                  >
+                    <div className="text-xs text-foreground">
+                      {JSON.stringify(usageFee)}
+                      {usageFee.pricingStrategy === 'UNIT' ? (
+                        <div>
+                          <p>
+                            {largeNumberFormatter.format(usageFee.pricingOptions.freeUnits)}{' '}
+                            {metric.unitName} included
+                          </p>
+                          <p>
+                            then ${usageFee.pricingOptions.perUnitPrice} per {metric.unitName}
+                          </p>
+                        </div>
+                      ) : usageFee.pricingStrategy === 'PACKAGE' ? (
+                        <div>
+                          <p>
+                            {largeNumberFormatter.format(usageFee.pricingOptions.freeUnits)}{' '}
+                            included
+                          </p>
+
+                          <p>
+                            then ${usageFee.pricingOptions.packagePrice} per{' '}
+                            {largeNumberFormatter.format(usageFee.pricingOptions.packageSize!)}
+                          </p>
+                        </div>
+                      ) : null}
+                    </div>
+                  </div>
+                </Tooltip.Content>
+              </Tooltip.Portal>
+            </Tooltip.Root>
           </div>
-        </Link>
+        ) : (
+          <div className="">
+            <Button type="default" onClick={() => snap.setPanelKey('subscriptionPlan')}>
+              Upgrade
+            </Button>
+          </div>
+        )}
 
         {isUsageBillingEnabled && hasLimit && usageFee && (
           <Tooltip.Root delayDuration={0}>
@@ -74,42 +149,6 @@ const BillingMetric = ({ idx, slug, metric, usage, subscription }: BillingMetric
                 <IconInfo size={14} strokeWidth={2} className="hover:text-foreground-light" />
               </div>
             </Tooltip.Trigger>
-            <Tooltip.Portal>
-              <Tooltip.Content side="bottom">
-                <Tooltip.Arrow className="radix-tooltip-arrow" />
-                <div
-                  className={[
-                    'rounded bg-alternative py-1 px-2 leading-none shadow',
-                    'border border-background',
-                  ].join(' ')}
-                >
-                  <div className="text-xs text-foreground">
-                    {usageFee.pricingStrategy === 'UNIT' ? (
-                      <div>
-                        <p>
-                          {largeNumberFormatter.format(usageFee.pricingOptions.freeUnits)}{' '}
-                          {metric.unitName} included
-                        </p>
-                        <p>
-                          then ${usageFee.pricingOptions.perUnitPrice} per {metric.unitName}
-                        </p>
-                      </div>
-                    ) : usageFee.pricingStrategy === 'PACKAGE' ? (
-                      <div>
-                        <p>
-                          {largeNumberFormatter.format(usageFee.pricingOptions.freeUnits)} included
-                        </p>
-
-                        <p>
-                          then ${usageFee.pricingOptions.packagePrice} per{' '}
-                          {largeNumberFormatter.format(usageFee.pricingOptions.packageSize!)}
-                        </p>
-                      </div>
-                    ) : null}
-                  </div>
-                </div>
-              </Tooltip.Content>
-            </Tooltip.Portal>
           </Tooltip.Root>
         )}
 
@@ -150,42 +189,6 @@ const BillingMetric = ({ idx, slug, metric, usage, subscription }: BillingMetric
           </Tooltip.Root>
         )}
       </div>
-      {usageMeta?.available_in_plan ? (
-        <SparkBar
-          type="horizontal"
-          max={usageMeta.pricing_free_units || 1}
-          value={usageMeta.usage ?? 0}
-          barClass={
-            !hasLimit && usageMeta.usage > 0
-              ? 'bg-foreground-light'
-              : isExceededLimit && !isUsageBillingEnabled
-              ? 'bg-red-900'
-              : isApproachingLimit && !isUsageBillingEnabled
-              ? 'bg-amber-900'
-              : 'bg-foreground-light'
-          }
-          bgClass="bg-overlay-hover"
-          labelBottom={usageLabel}
-          labelBottomClass="!text-foreground-light"
-          labelTop={hasLimit ? percentageLabel : undefined}
-          labelTopClass={
-            !hasLimit
-              ? ''
-              : isExceededLimit && !isUsageBillingEnabled
-              ? '!text-red-900'
-              : isApproachingLimit && !isUsageBillingEnabled
-              ? '!text-amber-900'
-              : ''
-          }
-        />
-      ) : (
-        <div className="flex items-center justify-between flex-grow">
-          <p className="text-sm text-foreground-light">Unavailable in your plan</p>
-          <Button type="default" onClick={() => snap.setPanelKey('subscriptionPlan')}>
-            Upgrade
-          </Button>
-        </div>
-      )}
     </div>
   )
 }
