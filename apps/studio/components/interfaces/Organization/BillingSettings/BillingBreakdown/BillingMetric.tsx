@@ -26,6 +26,8 @@ const BillingMetric = ({ idx, slug, metric, usage, subscription }: BillingMetric
       ? (usageMeta?.usage ?? 0) / (usageMeta?.pricing_free_units ?? 0)
       : 0
 
+  console.log({ usageMeta })
+
   const usageFee = subscription?.usage_fees?.find((item) => item.metric === metric.key)!
   const isUsageBillingEnabled = subscription?.usage_billing_enabled
   const largeNumberFormatter = new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 })
@@ -38,13 +40,25 @@ const BillingMetric = ({ idx, slug, metric, usage, subscription }: BillingMetric
     metric.units === 'bytes'
       ? `${usageMeta?.usage?.toLocaleString() ?? 0} GB`
       : usageMeta?.usage?.toLocaleString()
+
+  const usageCurrentLabel2 =
+    metric.units === 'bytes'
+      ? `${usageMeta?.usage?.toLocaleString() ?? 0} / ${usageMeta?.pricing_free_units ?? 0} GB`
+      : `${usageMeta?.usage?.toLocaleString()} / ${usageMeta?.pricing_free_units?.toLocaleString()}`
+
   const usageLimitLabel =
     metric.units === 'bytes'
       ? `${usageMeta?.pricing_free_units ?? 0} GB`
       : usageMeta?.pricing_free_units?.toLocaleString()
-  const percentageLabel = `${(usageRatio * 100).toFixed(2)}%`
+  const percentageLabel = `${(usageRatio * 100).toFixed(0)}%`
   const usageLabel =
-    usageMeta?.available_in_plan === false ? 'Unavailable in plan' : usageCurrentLabel
+    usageMeta?.available_in_plan === false
+      ? 'Unavailable in plan'
+      : usageMeta?.cost && usageMeta.cost > 0
+      ? usageCurrentLabel
+      : usageCurrentLabel2
+
+  // TODO sort metrics so the ones with higher usage show up first
 
   return (
     <div
@@ -64,7 +78,12 @@ const BillingMetric = ({ idx, slug, metric, usage, subscription }: BillingMetric
               <IconChevronRight strokeWidth={1.5} size={16} className="transition" />
             </div>
           </Link>
-          <span className="text-sm">{usageLabel}</span>
+          <span className="text-sm">{usageLabel}</span>&nbsp;
+          {usageMeta?.cost && usageMeta.cost > 0 ? (
+            <span className="text-sm">(${usageMeta?.cost})</span>
+          ) : usageMeta?.available_in_plan ? (
+            <span className="text-sm">({percentageLabel})</span>
+          ) : null}
         </div>
 
         {usageMeta?.available_in_plan ? (
@@ -88,9 +107,17 @@ const BillingMetric = ({ idx, slug, metric, usage, subscription }: BillingMetric
                     fill="transparent"
                     stroke="currentColor"
                     strokeDasharray={75.398}
-                    strokeDashoffset="calc(75.39822 - 35 / 100 * 75.39822)"
+                    strokeDashoffset={`calc(75.39822 - ${
+                      usageRatio < 1 ? usageRatio * 100 : 100
+                    } / 100 * 75.39822)`}
                     strokeWidth={4}
-                    className="text-gray-dark-800"
+                    className={
+                      isUsageBillingEnabled
+                        ? 'text-gray-dark-800'
+                        : isExceededLimit
+                        ? 'text-red-800'
+                        : 'text-yellow-800'
+                    }
                   />
                 </svg>
               </Tooltip.Trigger>
@@ -128,6 +155,15 @@ const BillingMetric = ({ idx, slug, metric, usage, subscription }: BillingMetric
                           </p>
                         </div>
                       ) : null}
+
+                      <p className="text-xs text-foreground">
+                        Exceeding your plans included usage will lead to restrictions to your
+                        project.
+                      </p>
+                      <p className="text-xs text-foreground">
+                        Upgrade to a usage-based plan or disable the spend cap to avoid
+                        restrictions.
+                      </p>
                     </div>
                   </div>
                 </Tooltip.Content>
@@ -140,53 +176,6 @@ const BillingMetric = ({ idx, slug, metric, usage, subscription }: BillingMetric
               Upgrade
             </Button>
           </div>
-        )}
-
-        {isUsageBillingEnabled && hasLimit && usageFee && (
-          <Tooltip.Root delayDuration={0}>
-            <Tooltip.Trigger>
-              <div className="flex items-center">
-                <IconInfo size={14} strokeWidth={2} className="hover:text-foreground-light" />
-              </div>
-            </Tooltip.Trigger>
-          </Tooltip.Root>
-        )}
-
-        {!isUsageBillingEnabled && usageRatio >= USAGE_APPROACHING_THRESHOLD && (
-          <Tooltip.Root delayDuration={0}>
-            <Tooltip.Trigger asChild>
-              {isExceededLimit && !isUsageBillingEnabled ? (
-                <div className="flex items-center space-x-2 min-w-[115px] cursor-help">
-                  <IconAlertTriangle size={14} strokeWidth={2} className="text-red-900" />
-                  <p className="text-sm text-red-900">Exceeded limit</p>
-                </div>
-              ) : isApproachingLimit && !isUsageBillingEnabled ? (
-                <div className="flex items-center space-x-2 min-w-[115px] cursor-help">
-                  <IconAlertTriangle size={14} strokeWidth={2} className="text-amber-900" />
-                  <p className="text-sm text-amber-900">Approaching limit</p>
-                </div>
-              ) : null}
-            </Tooltip.Trigger>
-
-            <Tooltip.Portal>
-              <Tooltip.Content side="bottom">
-                <Tooltip.Arrow className="radix-tooltip-arrow" />
-                <div
-                  className={[
-                    'rounded bg-alternative py-1 px-2 leading-none shadow',
-                    'border border-background',
-                  ].join(' ')}
-                >
-                  <p className="text-xs text-foreground">
-                    Exceeding your plans included usage will lead to restrictions to your project.
-                  </p>
-                  <p className="text-xs text-foreground">
-                    Upgrade to a usage-based plan or disable the spend cap to avoid restrictions.
-                  </p>
-                </div>
-              </Tooltip.Content>
-            </Tooltip.Portal>
-          </Tooltip.Root>
         )}
       </div>
     </div>

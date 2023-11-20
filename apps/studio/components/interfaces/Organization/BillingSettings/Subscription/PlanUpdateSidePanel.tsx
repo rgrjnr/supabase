@@ -6,7 +6,6 @@ import { useEffect, useState } from 'react'
 
 import Table from 'components/to-be-cleaned/Table'
 import AlertError from 'components/ui/AlertError'
-import InformationBox from 'components/ui/InformationBox'
 import ShimmeringLoader from 'components/ui/ShimmeringLoader'
 import { useFreeProjectLimitCheckQuery } from 'data/organizations/free-project-limit-check-query'
 import { useOrganizationBillingSubscriptionPreview } from 'data/organizations/organization-billing-subscription-preview'
@@ -20,7 +19,7 @@ import Telemetry from 'lib/telemetry'
 import { useRouter } from 'next/router'
 import { plans as subscriptionsPlans } from 'shared-data/plans'
 import { useOrgSettingsPageStateSnapshot } from 'state/organization-settings'
-import { Button, IconCheck, IconExternalLink, Modal, SidePanel } from 'ui'
+import { Button, IconCheck, IconChevronRight, IconExternalLink, Modal, SidePanel } from 'ui'
 import DowngradeModal from './DowngradeModal'
 import EnterpriseCard from './EnterpriseCard'
 import ExitSurveyModal from './ExitSurveyModal'
@@ -76,8 +75,53 @@ const PlanUpdateSidePanel = () => {
   const billingViaPartner = subscription?.billing_via_partner === true
   const paymentViaInvoice = subscription?.payment_method_type === 'invoice'
 
+  const subscriptionPreview = {
+    slug: 'ycippnjpzrhwqhfxahwq',
+    billed_via_partner: false,
+    plan_change_type: 'upgrade',
+    number_of_projects: 1,
+    breakdown: [
+      {
+        description: 'Pro plan',
+        unit_price: 25,
+        quantity: 1,
+        total_price: 25,
+      },
+      {
+        description: 'Compute Hours XS ($0.01344 per hour): 730.00 hours',
+        unit_price: 10,
+        quantity: 1460,
+        total_price: 20,
+        projects: [
+          {
+            project_ref: 'abc',
+            project_name: 'My super project',
+            quantity: 730,
+          },
+          {
+            project_ref: 'abc',
+            project_name: 'My not so super project',
+            quantity: 730,
+          },
+        ],
+      },
+      {
+        description: 'Compute Credits',
+        total_price: -10,
+      },
+    ],
+    active_projects: [
+      {
+        instance_size: 'ci_micro',
+        name: 'a',
+        ref: 'pzemscztngsmsgbntbsi',
+        status: 'ACTIVE_HEALTHY',
+      },
+    ],
+  }
+
   const {
-    data: subscriptionPreview,
+    // data: subscriptionPreview,
     error: subscriptionPreviewError,
     isLoading: subscriptionPreviewIsLoading,
     isSuccess: subscriptionPreviewInitialized,
@@ -86,6 +130,7 @@ const PlanUpdateSidePanel = () => {
   const availablePlans = plans ?? []
   const hasMembersExceedingFreeTierLimit = (membersExceededLimit || []).length > 0
   const subscriptionPlanMeta = subscriptionsPlans.find((tier) => tier.id === selectedTier)
+  const [showUsageFees, setShowUsageFees] = useState(false)
 
   useEffect(() => {
     if (visible) {
@@ -304,7 +349,7 @@ const PlanUpdateSidePanel = () => {
       <Modal
         loading={isUpdating}
         alignFooter="right"
-        size="large"
+        size="xlarge"
         visible={selectedTier !== undefined && selectedTier !== 'tier_free'}
         onCancel={() => setSelectedTier(undefined)}
         onConfirm={onUpdateSubscription}
@@ -325,61 +370,86 @@ const PlanUpdateSidePanel = () => {
           )}
           {subscriptionPreviewInitialized && (
             <div>
-              <InformationBox
-                defaultVisibility={false}
-                title={
-                  <span>
-                    Estimated monthly price is $
-                    {Math.round(
-                      subscriptionPreview.breakdown.reduce((prev, cur) => prev + cur.total_price, 0)
-                    )}{' '}
-                    + usage
-                  </span>
-                }
-                hideCollapse={false}
-                description={
-                  <Table
-                    borderless={true}
-                    head={[
-                      <Table.th key="header-item">Item</Table.th>,
-                      <Table.th key="header-count">Count</Table.th>,
-                      <Table.th key="header-unit-price">Unit Price</Table.th>,
-                      <Table.th key="header-price" className="text-right">
-                        Price
-                      </Table.th>,
-                    ]}
-                    body={
-                      <>
-                        {subscriptionPreview.breakdown.map((item) => (
-                          <Table.tr key={item.description}>
-                            <Table.td>{item.description ?? 'Unknown'}</Table.td>
-                            <Table.td>{item.quantity}</Table.td>
-                            <Table.td>
-                              {item.unit_price === 0 ? 'FREE' : `$${item.unit_price}`}
-                            </Table.td>
-                            <Table.td className="text-right">${item.total_price}</Table.td>
-                          </Table.tr>
-                        ))}
+              <span className="text-sm">
+                Estimated monthly price is{' '}
+                <span className="font-medium">
+                  $
+                  {Math.round(
+                    subscriptionPreview.breakdown.reduce((prev, cur) => prev + cur.total_price, 0)
+                  )}{' '}
+                  + usage
+                </span>
+              </span>
 
-                        <Table.tr>
-                          <Table.td>Total</Table.td>
-                          <Table.td />
-                          <Table.td />
-                          <Table.td className=" text-right">
-                            $
-                            {Math.round(
-                              subscriptionPreview.breakdown.reduce(
-                                (prev, cur) => prev + cur.total_price,
-                                0
-                              )
-                            ) ?? 0}
+              <Table
+                className="mt-2"
+                borderless={true}
+                head={[
+                  <Table.th key="header-item">Item</Table.th>,
+                  <Table.th key="header-count">Usage</Table.th>,
+                  <Table.th key="header-unit-price">Unit Price</Table.th>,
+                  <Table.th key="header-price" className="text-right">
+                    Price
+                  </Table.th>,
+                ]}
+                body={
+                  <>
+                    {subscriptionPreview.breakdown.map((item) => (
+                      <>
+                        <Table.tr key={item.description}>
+                          <Table.td>
+                            {item.projects && item.projects.length > 0 && (
+                              <Button
+                                type="text"
+                                className="!pl-0 !pr-1"
+                                icon={
+                                  <IconChevronRight
+                                    className={clsx('transition', showUsageFees && 'rotate-90')}
+                                  />
+                                }
+                                onClick={() => setShowUsageFees(!showUsageFees)}
+                              />
+                            )}
+                            {item.description ?? 'Unknown'}
                           </Table.td>
+                          <Table.td>{item.quantity}</Table.td>
+                          <Table.td>
+                            {item.unit_price === 0 ? 'FREE' : `$${item.unit_price}`}
+                          </Table.td>
+                          <Table.td className="text-right">${item.total_price}</Table.td>
                         </Table.tr>
+
+                        {showUsageFees &&
+                          item.projects &&
+                          item.projects.length > 0 &&
+                          item.projects.map((project) => (
+                            <Table.tr key={project.project_ref}>
+                              <Table.td className="!pl-12">{project.project_name}</Table.td>
+                              <Table.td>{project.quantity}</Table.td>
+                              <Table.td />
+                              <Table.td />
+                            </Table.tr>
+                          ))}
                       </>
-                    }
-                  ></Table>
+                    ))}
+
+                    <Table.tr>
+                      <Table.td>Total</Table.td>
+                      <Table.td />
+                      <Table.td />
+                      <Table.td className=" text-right">
+                        $
+                        {Math.round(
+                          subscriptionPreview.breakdown.reduce(
+                            (prev, cur) => prev + cur.total_price,
+                            0
+                          )
+                        ) ?? 0}
+                      </Table.td>
+                    </Table.tr>
+                  </>
                 }
-              />
+              ></Table>
 
               {subscriptionPreview.number_of_projects !== undefined &&
                 subscriptionPreview.number_of_projects > 1 && (
@@ -395,6 +465,9 @@ const PlanUpdateSidePanel = () => {
         <Modal.Content>
           {!billingViaPartner ? (
             <div className="py-4 space-y-2">
+              {/* TODO show remaining credits if type upgrade and there are credits left */}
+              {/* TODO explain ALL projects project transfers */}
+
               <p className="text-sm">
                 Upon clicking confirm, your monthly invoice will be adjusted and your credit card
                 will be charged immediately. Changing the plan resets your billing cycle and may

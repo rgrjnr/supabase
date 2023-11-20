@@ -5,7 +5,8 @@ import AlertError from 'components/ui/AlertError'
 import ShimmeringLoader from 'components/ui/ShimmeringLoader'
 import { useOrgUpcomingInvoiceQuery } from 'data/invoices/org-invoice-upcoming-query'
 import { useState } from 'react'
-import { Button, Collapsible, IconChevronRight } from 'ui'
+import { Button, Collapsible, IconChevronRight, IconInfo } from 'ui'
+import * as Tooltip from '@radix-ui/react-tooltip'
 
 export interface UpcomingInvoiceProps {
   slug?: string
@@ -115,7 +116,6 @@ const UpcomingInvoice = ({ slug }: UpcomingInvoiceProps) => {
 
   const [showUsageFees, setShowUsageFees] = useState(false)
   const [usageFees, fixedFees] = partition(upcomingInvoice?.lines ?? [], (item) => item.usage_based)
-  const totalUsageFees = Number(usageFees.reduce((a, b) => a + b.amount, 0).toFixed(2))
 
   return (
     <>
@@ -212,10 +212,35 @@ const UpcomingInvoice = ({ slug }: UpcomingInvoiceProps) => {
               </Collapsible>
             ))}
 
-          <tfoot className=''>
+          <tfoot>
             <tr>
-              <td className="py-4 text-sm font-medium">Total</td>
-              <td className="py-4 text-sm text-right font-medium" colSpan={3}>${upcomingInvoice?.amount_total ?? 0}</td>
+              <td className="py-4 text-sm font-medium">
+                <span className="mr-2">Projected Costs</span>
+                <Tooltip.Root delayDuration={0}>
+                  <Tooltip.Trigger>
+                    <IconInfo size={12} strokeWidth={2} />
+                  </Tooltip.Trigger>
+                  <Tooltip.Portal>
+                    <Tooltip.Content side="bottom">
+                      <Tooltip.Arrow className="radix-tooltip-arrow" />
+                      <div
+                        className={[
+                          'rounded bg-alternative py-1 px-2 leading-none shadow',
+                          'border border-background',
+                        ].join(' ')}
+                      >
+                        <span className="text-xs text-foreground">
+                          Estimated costs at the end of the billing cycle. Final amounts may vary
+                          depending on your usage.
+                        </span>
+                      </div>
+                    </Tooltip.Content>
+                  </Tooltip.Portal>
+                </Tooltip.Root>
+              </td>
+              <td className="py-4 text-sm text-right font-medium" colSpan={3}>
+                ${upcomingInvoice?.amount_projected ?? 0}
+              </td>
             </tr>
           </tfoot>
         </table>
