@@ -26,8 +26,6 @@ const BillingMetric = ({ idx, slug, metric, usage, subscription }: BillingMetric
       ? (usageMeta?.usage ?? 0) / (usageMeta?.pricing_free_units ?? 0)
       : 0
 
-  console.log({ usageMeta })
-
   const usageFee = subscription?.usage_fees?.find((item) => item.metric === metric.key)!
   const isUsageBillingEnabled = subscription?.usage_billing_enabled
   const largeNumberFormatter = new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 })
@@ -61,13 +59,7 @@ const BillingMetric = ({ idx, slug, metric, usage, subscription }: BillingMetric
   // TODO sort metrics so the ones with higher usage show up first
 
   return (
-    <div
-      className={clsx(
-        'col-span-12 md:col-span-6 space-y-4 py-4 border-overlay',
-        idx % 2 === 0 ? 'md:border-r md:pr-4' : 'md:pl-4',
-        idx < BILLING_BREAKDOWN_METRICS.length - 3 && 'border-b'
-      )}
-    >
+   
       <div className="flex items-center justify-between">
         <div>
           <Link href={`/org/${slug}/usage#${metric.anchor}`}>
@@ -115,8 +107,8 @@ const BillingMetric = ({ idx, slug, metric, usage, subscription }: BillingMetric
                       isUsageBillingEnabled
                         ? 'text-gray-dark-800'
                         : isExceededLimit
-                        ? 'text-red-800'
-                        : 'text-yellow-800'
+                        ? 'text-red-900'
+                        : 'text-yellow-900'
                     }
                   />
                 </svg>
@@ -178,7 +170,6 @@ const BillingMetric = ({ idx, slug, metric, usage, subscription }: BillingMetric
           </div>
         )}
       </div>
-    </div>
   )
 }
 

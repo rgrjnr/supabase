@@ -1,5 +1,5 @@
 import { DataPoint } from 'data/analytics/constants'
-import { ComputeUsageMetric, computeUsageMetricLabel } from 'data/analytics/org-daily-stats-query'
+import { PricingMetric, computeUsageMetricLabel } from 'data/analytics/org-daily-stats-query'
 import { OrgSubscription } from 'data/subscriptions/org-subscription-query'
 import SectionContent from './SectionContent'
 import ShimmeringLoader from 'components/ui/ShimmeringLoader'
@@ -12,6 +12,8 @@ import { useMemo } from 'react'
 import { useOrgUsageQuery } from 'data/usage/org-usage-query'
 import BillingMetric from '../BillingSettings/BillingBreakdown/BillingMetric'
 import { BILLING_BREAKDOWN_METRICS } from '../BillingSettings/BillingBreakdown/BillingBreakdown.constants'
+import ComputeUsageMetric from '../BillingSettings/BillingBreakdown/ComputeUsageMetric'
+import clsx from 'clsx'
 
 export interface ComputeProps {
   orgSlug: string
@@ -137,6 +139,16 @@ const TotalUsage = ({
         pricing_strategy: 'NONE',
         pricing_free_units: 200,
       },
+      {
+        usage: 355,
+        metric: 'COMPUTE_HOURS_XS',
+        cost: 5,
+        available_in_plan: true,
+        unlimited: false,
+        capped: true,
+        pricing_strategy: 'NONE',
+        pricing_free_units: 500,
+      },
     ],
   }
 
@@ -179,6 +191,10 @@ const TotalUsage = ({
     })
   }, [usage])
 
+  const computeMetrics = ['COMPUTE_HOURS_XS']
+
+  const allMetricsLength = sortedBillingMetrics.length + computeMetrics.length
+
   return (
     <div id="summary">
       <SectionContent
@@ -217,16 +233,50 @@ const TotalUsage = ({
             <div className="grid grid-cols-12 mt-3">
               {sortedBillingMetrics.map((metric, i) => {
                 return (
-                  <BillingMetric
-                    idx={i}
+                  <div
+                    className={clsx(
+                      'col-span-12 md:col-span-6 space-y-4 py-4 border-overlay',
+                      i % 2 === 0 ? 'md:border-r md:pr-4' : 'md:pl-4',
+                      'border-b'
+                    )}
                     key={metric.key}
+                  >
+                    <BillingMetric
+                      idx={i}
+                      slug={orgSlug}
+                      metric={metric}
+                      usage={usage}
+                      subscription={subscription!}
+                    />
+                  </div>
+                )
+              })}
+
+              {computeMetrics.map((metric, i) => (
+                <div
+                  className={clsx(
+                    'col-span-12 md:col-span-6 space-y-4 py-4 border-overlay',
+                    i % 2 === 0 ? 'md:border-r md:pr-4' : 'md:pl-4'
+                  )}
+                  key={metric}
+                >
+                  <ComputeUsageMetric
+                    idx={123}
+                    key={'key'}
                     slug={orgSlug}
-                    metric={metric}
+                    metric={{
+                      key: 'COMPUTE_HOURS_XS',
+                      name: 'Compute Hours XS',
+                      units: 'bytes',
+                      anchor: 'dbSize',
+                      category: 'Database',
+                      unitName: 'GB',
+                    }}
                     usage={usage}
                     subscription={subscription!}
                   />
-                )
-              })}
+                </div>
+              ))}
             </div>
           </div>
         )}
