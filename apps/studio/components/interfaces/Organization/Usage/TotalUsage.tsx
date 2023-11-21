@@ -223,7 +223,7 @@ const TotalUsage = ({
 
         {isErrorUsage && <AlertError subject="Failed to retrieve usage data" error={usageError} />}
 
-        {isSuccessUsage && (
+        {isSuccessUsage && subscription && (
           <div>
             <p className="text-sm">
               You have not exceeded your{' '}

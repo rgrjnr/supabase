@@ -9,6 +9,7 @@ import { IconBarChart2 } from 'ui'
 import UsageBarChart from './UsageBarChart'
 import { Attribute } from './Usage.constants'
 import { useMemo } from 'react'
+import { useOrgDailyComputeStatsQuery } from 'data/analytics/org-daily-compute-stats-query'
 
 export interface ComputeProps {
   orgSlug: string
@@ -20,32 +21,24 @@ export interface ComputeProps {
 
 // [Joshen TODO] Needs to take in org slug and eventually use daily stats org query
 const Compute = ({ orgSlug, projectRef, subscription, startDate, endDate }: ComputeProps) => {
-  const allAttributeKeys = Object.values(ComputeUsageMetric)
+  const allAttributeKeys = Object.values(ComputeUsageMetric).map((it) => it.toLowerCase())
+  const { data: egressData, isLoading: isLoadingDbEgressData } = useOrgDailyComputeStatsQuery({
+    orgSlug,
+    projectRef,
+    startDate,
+    endDate,
+  })
 
-  const chartData: DataPoint[] = [
-    {
-      period_start: '2023-11-09',
-      id: '1',
-      loopId: 1,
-      COMPUTE_HOURS_XS: 24,
-    },
-    {
-      period_start: '2023-11-10',
-      id: '2',
-      loopId: 2,
-      COMPUTE_HOURS_XS: 24,
-      COMPUTE_HOURS_MD: 12,
-    },
-  ]
+  const chartData: DataPoint[] = egressData?.data ?? []
 
   const attributes: Attribute[] = [
     {
-      key: ComputeUsageMetric.COMPUTE_HOURS_BRANCH,
+      key: ComputeUsageMetric.COMPUTE_HOURS_BRANCH.toLowerCase(),
       color: 'blue',
       name: computeUsageMetricLabel(ComputeUsageMetric.COMPUTE_HOURS_BRANCH),
     },
     {
-      key: ComputeUsageMetric.COMPUTE_HOURS_XS,
+      key: ComputeUsageMetric.COMPUTE_HOURS_XS.toLowerCase(),
       color: 'white',
       name: computeUsageMetricLabel(ComputeUsageMetric.COMPUTE_HOURS_XS),
     },
@@ -153,9 +146,15 @@ const Compute = ({ orgSlug, projectRef, subscription, startDate, endDate }: Comp
                 </div>
 
                 {attributeKeysWithData.map((key) => (
-                  <div key={key} className="flex items-center justify-between border-b last:border-b-0 py-1 last:py-0">
+                  <div
+                    key={key}
+                    className="flex items-center justify-between border-b last:border-b-0 py-1 last:py-0"
+                  >
                     <p className="text-xs text-foreground-light">
-                      <span className='font-medium'>{computeUsageMetricLabel(key)}</span> Compute Hours usage in period
+                      <span className="font-medium">
+                        {computeUsageMetricLabel(key.toUpperCase() as ComputeUsageMetric)}
+                      </span>{' '}
+                      Compute Hours usage in period
                     </p>
                     <p className="text-xs">
                       {chartData.reduce((prev, cur) => prev + ((cur[key] as number) ?? 0), 0)} hours
@@ -183,6 +182,7 @@ const Compute = ({ orgSlug, projectRef, subscription, startDate, endDate }: Comp
                   unit={'hours'}
                   attributes={attributes}
                   data={chartData}
+                  yMin={24}
                 />
               ) : (
                 <Panel>
