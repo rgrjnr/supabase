@@ -51,6 +51,9 @@ export async function previewOrganizationBillingSubscription({
       body: {
         tier,
       },
+      headers: {
+        Version: '2',
+      },
     }
   )
 
