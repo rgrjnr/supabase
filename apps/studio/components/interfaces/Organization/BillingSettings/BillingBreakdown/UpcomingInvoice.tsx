@@ -38,7 +38,7 @@ const UpcomingInvoice = ({ slug }: UpcomingInvoiceProps) => {
         pricingMetric
       )
     ) {
-      return formatBytes(usage)
+      return formatBytes(usage, undefined, 1000)
     } else {
       return usage.toLocaleString()
     }
