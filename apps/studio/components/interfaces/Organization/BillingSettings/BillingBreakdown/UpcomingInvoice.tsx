@@ -32,13 +32,15 @@ const UpcomingInvoice = ({ slug }: UpcomingInvoiceProps) => {
       .sort((a, b) => b.amount - a.amount)
   }, [upcomingInvoice])
 
+  const pricingMetricBytes = [
+    PricingMetric.DATABASE_SIZE,
+    PricingMetric.EGRESS,
+    PricingMetric.STORAGE_SIZE,
+  ]
+
   const formatUsage = (pricingMetric: PricingMetric, usage: number) => {
-    if (
-      [PricingMetric.DATABASE_SIZE, PricingMetric.EGRESS, PricingMetric.STORAGE_SIZE].includes(
-        pricingMetric
-      )
-    ) {
-      return formatBytes(usage, undefined, 1000)
+    if (pricingMetricBytes.includes(pricingMetric)) {
+      return +(usage / 1e9).toFixed(2).toLocaleString()
     } else {
       return usage.toLocaleString()
     }
@@ -63,18 +65,20 @@ const UpcomingInvoice = ({ slug }: UpcomingInvoiceProps) => {
               <th className="py-2 font-medium text-left text-sm text-foreground-light max-w-[200px]">
                 Item
               </th>
-              <th className="py-2 font-medium text-left text-sm text-foreground-light">Usage</th>
+              <th className="py-2 font-medium text-right text-sm text-foreground-light pr-4">
+                Usage
+              </th>
               <th className="py-2 font-medium text-left text-sm text-foreground-light">
                 Unit price
               </th>
-              <th className="py-2 font-medium text-right text-sm text-foreground-light">Price</th>
+              <th className="py-2 font-medium text-right text-sm text-foreground-light">Cost</th>
             </tr>
           </thead>
           <tbody>
             {fixedFees.map((item) => (
-              <tr key={item.description} className='border-b'>
+              <tr key={item.description} className="border-b">
                 <td className="py-2 text-sm max-w-[200px]">{item.description ?? 'Unknown'}</td>
-                <td className="py-2 text-sm">{item.quantity}</td>
+                <td className="py-2 text-sm text-right pr-4">{item.quantity}</td>
                 <td className="py-2 text-sm">
                   {item.unit_price === 0 ? 'FREE' : `$${item.unit_price}`}
                 </td>
@@ -99,7 +103,6 @@ const UpcomingInvoice = ({ slug }: UpcomingInvoiceProps) => {
                       style={{ WebkitAppearance: 'initial' }}
                     >
                       <td className="py-2 text-sm max-w-[200px]">
-                        <span>{fee.description}</span>{' '}
                         <Button
                           type="text"
                           className="!px-1"
@@ -108,9 +111,13 @@ const UpcomingInvoice = ({ slug }: UpcomingInvoiceProps) => {
                               className={clsx('transition', showUsageFees && 'rotate-90')}
                             />
                           }
-                        />
+                        />{' '}
+                        <span>
+                          {fee.description}
+                          {pricingMetricBytes.includes(fee.usage_metric!) && ' (GB)'}
+                        </span>
                       </td>
-                      <td className="py-2 text-sm tabular-nums max-w-[100px]">
+                      <td className="py-2 pr-4 text-sm text-right tabular-nums max-w-[100px]">
                         {fee.usage_original
                           ? `${formatUsage(fee.usage_metric!, fee.usage_original)}`
                           : null}
@@ -130,10 +137,10 @@ const UpcomingInvoice = ({ slug }: UpcomingInvoiceProps) => {
                           style={{ WebkitAppearance: 'initial' }}
                           key={breakdown.project_ref}
                         >
-                          <td className="pb-1 text-xs pl-4 max-w-[200px]">
+                          <td className="pb-1 text-xs pl-8 max-w-[200px]">
                             {breakdown.project_name}
                           </td>
-                          <td className="pb-1 text-xs tabular-nums">
+                          <td className="pb-1 text-xs tabular-nums text-right pr-4">
                             {formatUsage(fee.usage_metric!, breakdown.usage)}
                           </td>
                           <td />
