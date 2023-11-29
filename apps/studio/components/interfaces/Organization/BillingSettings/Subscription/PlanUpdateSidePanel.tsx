@@ -19,12 +19,21 @@ import Telemetry from 'lib/telemetry'
 import { useRouter } from 'next/router'
 import { plans as subscriptionsPlans } from 'shared-data/plans'
 import { useOrgSettingsPageStateSnapshot } from 'state/organization-settings'
-import { Button, IconCheck, IconChevronRight, IconExternalLink, Modal, SidePanel } from 'ui'
+import {
+  Button,
+  IconCheck,
+  IconChevronRight,
+  IconExternalLink,
+  IconInfo,
+  Modal,
+  SidePanel,
+} from 'ui'
 import DowngradeModal from './DowngradeModal'
 import EnterpriseCard from './EnterpriseCard'
 import ExitSurveyModal from './ExitSurveyModal'
 import MembersExceedLimitModal from './MembersExceedLimitModal'
 import PaymentMethodSelection from './PaymentMethodSelection'
+import InformationBox from 'components/ui/InformationBox'
 
 // [Joshen TODO] Need to remove all contexts of "projects"
 
@@ -75,53 +84,8 @@ const PlanUpdateSidePanel = () => {
   const billingViaPartner = subscription?.billing_via_partner === true
   const paymentViaInvoice = subscription?.payment_method_type === 'invoice'
 
-  const subscriptionPreview = {
-    slug: 'ycippnjpzrhwqhfxahwq',
-    billed_via_partner: false,
-    plan_change_type: 'upgrade',
-    number_of_projects: 1,
-    breakdown: [
-      {
-        description: 'Pro plan',
-        unit_price: 25,
-        quantity: 1,
-        total_price: 25,
-      },
-      {
-        description: 'Compute Hours XS ($0.01344 per hour): 730.00 hours',
-        unit_price: 10,
-        quantity: 1460,
-        total_price: 20,
-        projects: [
-          {
-            project_ref: 'abc',
-            project_name: 'My super project',
-            quantity: 730,
-          },
-          {
-            project_ref: 'abc',
-            project_name: 'My not so super project',
-            quantity: 730,
-          },
-        ],
-      },
-      {
-        description: 'Compute Credits',
-        total_price: -10,
-      },
-    ],
-    active_projects: [
-      {
-        instance_size: 'ci_micro',
-        name: 'a',
-        ref: 'pzemscztngsmsgbntbsi',
-        status: 'ACTIVE_HEALTHY',
-      },
-    ],
-  }
-
   const {
-    // data: subscriptionPreview,
+    data: subscriptionPreview,
     error: subscriptionPreviewError,
     isLoading: subscriptionPreviewIsLoading,
     isSuccess: subscriptionPreviewInitialized,
@@ -370,23 +334,12 @@ const PlanUpdateSidePanel = () => {
           )}
           {subscriptionPreviewInitialized && (
             <div>
-              <span className="text-sm">
-                Estimated monthly price is{' '}
-                <span className="font-medium">
-                  $
-                  {Math.round(
-                    subscriptionPreview.breakdown.reduce((prev, cur) => prev + cur.total_price, 0)
-                  )}{' '}
-                  + usage
-                </span>
-              </span>
-
               <Table
                 className="mt-2"
                 borderless={true}
                 head={[
                   <Table.th key="header-item">Item</Table.th>,
-                  <Table.th key="header-count">Usage</Table.th>,
+                  <Table.th key="header-count text-right pr-4">Usage</Table.th>,
                   <Table.th key="header-unit-price">Unit Price</Table.th>,
                   <Table.th key="header-price" className="text-right">
                     Price
@@ -398,7 +351,7 @@ const PlanUpdateSidePanel = () => {
                       <>
                         <Table.tr key={item.description}>
                           <Table.td>
-                            {item.projects && item.projects.length > 0 && (
+                            {item.breakdown && item.breakdown.length > 0 && (
                               <Button
                                 type="text"
                                 className="!pl-0 !pr-1"
@@ -412,20 +365,30 @@ const PlanUpdateSidePanel = () => {
                             )}
                             {item.description ?? 'Unknown'}
                           </Table.td>
-                          <Table.td>{item.quantity}</Table.td>
+                          <Table.td className="text-right pr-4 tabular-nums">
+                            {item.quantity}
+                          </Table.td>
                           <Table.td>
-                            {item.unit_price === 0 ? 'FREE' : `$${item.unit_price}`}
+                            {item.unit_price_desc
+                              ? item.unit_price_desc
+                              : item.unit_price === 0
+                              ? 'FREE'
+                              : item.unit_price
+                              ? `$${item.unit_price}`
+                              : ''}
                           </Table.td>
                           <Table.td className="text-right">${item.total_price}</Table.td>
                         </Table.tr>
 
                         {showUsageFees &&
-                          item.projects &&
-                          item.projects.length > 0 &&
-                          item.projects.map((project) => (
+                          item.breakdown &&
+                          item.breakdown.length > 0 &&
+                          item.breakdown.map((project) => (
                             <Table.tr key={project.project_ref}>
                               <Table.td className="!pl-12">{project.project_name}</Table.td>
-                              <Table.td>{project.quantity}</Table.td>
+                              <Table.td className="text-right pr-4 tabular-nums">
+                                {project.usage}
+                              </Table.td>
                               <Table.td />
                               <Table.td />
                             </Table.tr>
@@ -434,10 +397,12 @@ const PlanUpdateSidePanel = () => {
                     ))}
 
                     <Table.tr>
-                      <Table.td>Total</Table.td>
+                      <Table.td className="font-medium">
+                        Monthly Costs (excluding over-usage)
+                      </Table.td>
                       <Table.td />
                       <Table.td />
-                      <Table.td className=" text-right">
+                      <Table.td className="text-right font-medium">
                         $
                         {Math.round(
                           subscriptionPreview.breakdown.reduce(
@@ -451,13 +416,58 @@ const PlanUpdateSidePanel = () => {
                 }
               ></Table>
 
-              {subscriptionPreview.number_of_projects !== undefined &&
-                subscriptionPreview.number_of_projects > 1 && (
-                  <p className="text-sm mt-2">
-                    All {subscriptionPreview.number_of_projects} projects from your organization "
-                    {selectedOrganization?.name}" will use the new {planMeta?.name} plan.
-                  </p>
-                )}
+              <InformationBox
+                className="mt-4"
+                title="Usage-billing for Compute"
+                icon={<IconInfo />}
+                defaultVisibility={true}
+                hideCollapse={true}
+                description={
+                  <div>
+                    <p className="text-sm mt-2">
+                      Each project is a dedicated server and database. Paid plans come with $10 of
+                      Compute Credits to cover one project on the default Starter Compute size or
+                      parts of any compute addon. Additional unpaused projects on paid plans at
+                      least incur compute usage costs starting at $10 per month, billed hourly.
+                    </p>
+
+                    {subscription?.plan?.id === 'free' && (
+                      <p className="text-sm mt-2">
+                        Mixing paid and non-paid projects in a single organization is not possible.
+                        If you want projects to be on the free plan, use self-serve project
+                        transfers.
+                      </p>
+                    )}
+
+                    <div className="space-x-3 mt-2">
+                      <Button asChild type="default" icon={<IconExternalLink strokeWidth={1.5} />}>
+                        <Link
+                          href="https://supabase.com/docs/guides/platform/org-based-billing"
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          How billing works
+                        </Link>
+                      </Button>
+                      {subscription?.plan?.id === 'free' && (
+                        <Button
+                          asChild
+                          type="default"
+                          icon={<IconExternalLink strokeWidth={1.5} />}
+                        >
+                          <Link
+                            href="https://supabase.com/docs/guides/platform/project-transfer"
+                            target="_blank"
+                            rel="noreferrer"
+                          >
+                            Project Transfers
+                          </Link>
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                }
+              />
             </div>
           )}
         </Modal.Content>
@@ -465,8 +475,7 @@ const PlanUpdateSidePanel = () => {
         <Modal.Content>
           {!billingViaPartner ? (
             <div className="py-4 space-y-2">
-              {/* TODO show remaining credits if type upgrade and there are credits left */}
-              {/* TODO explain ALL projects project transfers */}
+              {/* TODO(kevcodez) show remaining credits if type upgrade and there are credits left */}
 
               <p className="text-sm">
                 Upon clicking confirm, your monthly invoice will be adjusted and your credit card
