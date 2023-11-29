@@ -4,110 +4,19 @@ import { partition } from 'lodash'
 import AlertError from 'components/ui/AlertError'
 import ShimmeringLoader from 'components/ui/ShimmeringLoader'
 import { useOrgUpcomingInvoiceQuery } from 'data/invoices/org-invoice-upcoming-query'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Button, Collapsible, IconChevronRight, IconInfo } from 'ui'
 import * as Tooltip from '@radix-ui/react-tooltip'
+import { PricingMetric } from 'data/analytics/org-daily-stats-query'
+import { formatBytes } from 'lib/helpers'
 
 export interface UpcomingInvoiceProps {
   slug?: string
 }
 
 const UpcomingInvoice = ({ slug }: UpcomingInvoiceProps) => {
-  const upcomingInvoice = {
-    subscription_id: 'sub_1O7y6gJDPojXS6LN92YUAeVw',
-    amount_total: 37.22,
-    billing_cycle_end: '2023-12-02T10:26:34.000Z',
-    billing_cycle_start: '2023-11-02T10:26:34.000Z',
-    customer_balance: 0,
-    currency: 'usd',
-    lines: [
-      {
-        amount: 0,
-        description: 'Pro plan',
-        quantity: 1,
-        unit_price: 25,
-        usage_based: false,
-        period: {
-          start: '2023-12-02T10:26:34.000Z',
-          end: '2024-01-02T10:26:34.000Z',
-        },
-        proration: false,
-      },
-
-      {
-        amount: 20,
-        description: 'Custom Domain',
-        quantity: '2',
-        unit_price: '$10',
-        usage_based: true,
-        period: {
-          start: '2023-12-02T10:26:34.000Z',
-          end: '2024-01-02T10:26:34.000Z',
-        },
-        proration: false,
-        breakdown: [
-          {
-            project_ref: 'abc',
-            project_name: 'My super project',
-            quantity: '1',
-          },
-          {
-            project_ref: 'abc',
-            project_name: 'My not so super project',
-            quantity: '1',
-          },
-        ],
-      },
-
-      {
-        amount: 15.99,
-        description: 'Function Invocations',
-        quantity: '15,645,888',
-        unit_price: '2 Million included, then $2 per 1 Million',
-        usage_based: true,
-        period: {
-          start: '2023-12-02T10:26:34.000Z',
-          end: '2024-01-02T10:26:34.000Z',
-        },
-        proration: false,
-        breakdown: [
-          {
-            project_ref: 'abc',
-            project_name: 'My super project',
-            quantity: '15,600,888',
-          },
-          {
-            project_ref: 'abc',
-            project_name: 'My not so super project',
-            quantity: '45,000',
-          },
-        ],
-      },
-
-      {
-        amount: 1.23,
-        description: 'Compute Hours XS',
-        quantity: '90',
-        unit_price: '$0.0137 / hour',
-        usage_based: true,
-        period: {
-          start: '2023-12-02T10:26:34.000Z',
-          end: '2024-01-02T10:26:34.000Z',
-        },
-        proration: false,
-        breakdown: [
-          {
-            project_ref: 'abc',
-            project_name: 'My super project',
-            quantity: '90',
-          },
-        ],
-      },
-    ],
-  }
-
   const {
-    //data: upcomingInvoice,
+    data: upcomingInvoice,
     error: error,
     isLoading,
     isError,
@@ -115,7 +24,25 @@ const UpcomingInvoice = ({ slug }: UpcomingInvoiceProps) => {
   } = useOrgUpcomingInvoiceQuery({ orgSlug: slug })
 
   const [showUsageFees, setShowUsageFees] = useState(false)
-  const [usageFees, fixedFees] = partition(upcomingInvoice?.lines ?? [], (item) => item.usage_based)
+  const [, fixedFees] = partition(upcomingInvoice?.lines ?? [], (item) => item.usage_based)
+
+  const usageFees = useMemo(() => {
+    return (upcomingInvoice?.lines || [])
+      .filter((item) => item.usage_based)
+      .sort((a, b) => b.amount - a.amount)
+  }, [upcomingInvoice])
+
+  const formatUsage = (pricingMetric: PricingMetric, usage: number) => {
+    if (
+      [PricingMetric.DATABASE_SIZE, PricingMetric.EGRESS, PricingMetric.STORAGE_SIZE].includes(
+        pricingMetric
+      )
+    ) {
+      return formatBytes(usage)
+    } else {
+      return usage.toLocaleString()
+    }
+  }
 
   return (
     <>
@@ -133,7 +60,7 @@ const UpcomingInvoice = ({ slug }: UpcomingInvoiceProps) => {
         <table className="w-full">
           <thead>
             <tr className="border-b">
-              <th className="py-2 font-medium text-left text-sm text-foreground-light w-1/2">
+              <th className="py-2 font-medium text-left text-sm text-foreground-light max-w-[200px]">
                 Item
               </th>
               <th className="py-2 font-medium text-left text-sm text-foreground-light">Usage</th>
@@ -145,11 +72,11 @@ const UpcomingInvoice = ({ slug }: UpcomingInvoiceProps) => {
           </thead>
           <tbody>
             {fixedFees.map((item) => (
-              <tr key={item.description} className="border-b">
-                <td className="py-2 text-sm">{item.description ?? 'Unknown'}</td>
+              <tr key={item.description} className='border-b'>
+                <td className="py-2 text-sm max-w-[200px]">{item.description ?? 'Unknown'}</td>
                 <td className="py-2 text-sm">{item.quantity}</td>
                 <td className="py-2 text-sm">
-                  {item.unit_price === 0 ? 'FREE' : `${item.unit_price}`}
+                  {item.unit_price === 0 ? 'FREE' : `$${item.unit_price}`}
                 </td>
                 <td className="py-2 text-sm text-right">${item.amount}</td>
               </tr>
@@ -167,12 +94,12 @@ const UpcomingInvoice = ({ slug }: UpcomingInvoiceProps) => {
                 <tbody>
                   <Collapsible.Trigger asChild>
                     <tr
-                      className="border-b"
+                      className={showUsageFees ? '' : 'border-b'}
                       key={fee.description}
                       style={{ WebkitAppearance: 'initial' }}
                     >
-                      <td className="py-2 text-sm">
-                        {' '}
+                      <td className="py-2 text-sm max-w-[200px]">
+                        <span>{fee.description}</span>{' '}
                         <Button
                           type="text"
                           className="!px-1"
@@ -181,14 +108,17 @@ const UpcomingInvoice = ({ slug }: UpcomingInvoiceProps) => {
                               className={clsx('transition', showUsageFees && 'rotate-90')}
                             />
                           }
-                        />{' '}
-                        <span>{fee.description}</span>
+                        />
                       </td>
-                      <td className="py-2 text-sm">{fee.quantity ? `${fee.quantity}` : null}</td>
-                      <td className="py-2 text-sm max-w-[30px]">
-                        {fee.unit_price ? `${fee.unit_price}` : null}
+                      <td className="py-2 text-sm tabular-nums max-w-[100px]">
+                        {fee.usage_original
+                          ? `${formatUsage(fee.usage_metric!, fee.usage_original)}`
+                          : null}
                       </td>
-                      <td className="py-2 text-sm text-right">${fee.amount ?? 0}</td>
+                      <td className="py-2 text-sm">
+                        {fee.unit_price_desc ? `${fee.unit_price_desc}` : null}
+                      </td>
+                      <td className="py-2 text-sm text-right max-w-[70px]">${fee.amount ?? 0}</td>
                     </tr>
                   </Collapsible.Trigger>
 
@@ -200,8 +130,12 @@ const UpcomingInvoice = ({ slug }: UpcomingInvoiceProps) => {
                           style={{ WebkitAppearance: 'initial' }}
                           key={breakdown.project_ref}
                         >
-                          <td className="py-2 text-sm pl-8">{breakdown.project_name}</td>
-                          <td className="py-2 text-sm">{breakdown.quantity}</td>
+                          <td className="pb-1 text-xs pl-4 max-w-[200px]">
+                            {breakdown.project_name}
+                          </td>
+                          <td className="pb-1 text-xs tabular-nums">
+                            {formatUsage(fee.usage_metric!, breakdown.usage)}
+                          </td>
                           <td />
                           <td />
                         </tr>
@@ -239,7 +173,7 @@ const UpcomingInvoice = ({ slug }: UpcomingInvoiceProps) => {
                 </Tooltip.Root>
               </td>
               <td className="py-4 text-sm text-right font-medium" colSpan={3}>
-                ${upcomingInvoice?.amount_projected ?? 0}
+                ${upcomingInvoice?.amount_projected ?? '-'}
               </td>
             </tr>
           </tfoot>

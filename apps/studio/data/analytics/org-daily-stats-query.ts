@@ -16,9 +16,7 @@ export enum EgressType {
 // [Joshen] Get this from common package instead of API and dashboard having one copy each
 export enum PricingMetric {
   EGRESS = 'EGRESS',
-  DATABASE_EGRESS = 'DATABASE_EGRESS',
   DATABASE_SIZE = 'DATABASE_SIZE',
-  STORAGE_EGRESS = 'STORAGE_EGRESS',
   STORAGE_SIZE = 'STORAGE_SIZE',
   MONTHLY_ACTIVE_USERS = 'MONTHLY_ACTIVE_USERS',
   MONTHLY_ACTIVE_SSO_USERS = 'MONTHLY_ACTIVE_SSO_USERS',

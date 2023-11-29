@@ -11,6 +11,7 @@ import ShimmeringLoader from 'components/ui/ShimmeringLoader'
 import { useOrgSubscriptionQuery } from 'data/subscriptions/org-subscription-query'
 import UpcomingInvoice from './UpcomingInvoice'
 import { useIsFeatureEnabled } from 'hooks'
+import Link from 'next/link'
 
 const BillingBreakdown = () => {
   const { slug: orgSlug } = useParams()
@@ -55,12 +56,19 @@ const BillingBreakdown = () => {
           <>
             <p className="text-sm">Upcoming cost for next invoice</p>
             <p className="text-sm text-foreground-light">
-              The following table shows your upcoming costs. Depending on your usage, the final
-              amount may vary. Next invoice on{' '}
+              The following table shows your upcoming costs excluding credits. Depending on your
+              usage, the final amount may vary. Next invoice on{' '}
               <span className="text-foreground-light whitespace-nowrap">
                 {billingCycleEnd.format('MMM DD, YYYY')}
               </span>
-              .
+              . See&nbsp;
+              <Link
+                className="text-green-900 transition hover:text-green-1000"
+                href={`/org/${orgSlug}/usage`}
+              >
+                usage page
+              </Link>{' '}
+              for a more detailed usage breakdown.
             </p>
 
             <UpcomingInvoice slug={orgSlug} />
