@@ -1,8 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { compact, last, sortBy } from 'lodash'
 import { Loader2 } from 'lucide-react'
-import OpenAI from 'openai'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { Dispatch, FormEventHandler, SetStateAction, useEffect, useMemo, useRef } from 'react'
 import { useForm } from 'react-hook-form'
 import {
   AiIcon,
@@ -14,31 +13,29 @@ import {
 } from 'ui'
 import * as z from 'zod'
 
+import { Message } from 'ai'
 import { useProfile } from 'lib/profile'
-import Message from './Message'
+import MessageComponent from './Message'
 
 export const AIPolicyChat = ({
   messages,
   loading,
   onSubmit,
   onDiff,
-  onChange,
+  onChangeInput,
 }: {
-  messages: OpenAI.Beta.Threads.Messages.ThreadMessage[]
+  messages: Message[]
   loading: boolean
-  onSubmit: (s: string) => void
+  onSubmit: FormEventHandler<HTMLFormElement>
   onDiff: (s: string) => void
-  onChange: (value: boolean) => void
+  onChangeInput: Dispatch<SetStateAction<string>>
 }) => {
   const { profile } = useProfile()
   const bottomRef = useRef<HTMLDivElement>(null)
   const name = compact([profile?.first_name, profile?.last_name]).join(' ')
   const sorted = useMemo(() => {
-    return sortBy(messages, (m) => m.created_at).filter((m) => {
-      if (m.content[0].type === 'text') {
-        return !m.content[0].text.value.startsWith('Here is my database schema for reference:')
-      }
-      return false
+    return sortBy(messages, (m) => m.createdAt).filter((m) => {
+      return !m.content.startsWith('Here is my database schema for reference:')
     })
   }, [messages])
 
@@ -69,13 +66,13 @@ export const AIPolicyChat = ({
   }, [loading])
 
   useEffect(() => {
-    onChange(formChatValue.length === 0)
+    onChangeInput(formChatValue)
   }, [formChatValue])
 
   return (
     <div id={'ai-chat-assistant'} className="flex flex-col h-full">
       <div className="overflow-auto flex-1">
-        <Message
+        <MessageComponent
           role="assistant"
           content={`Hi${
             name ? ' ' + name : ''
@@ -85,20 +82,18 @@ export const AIPolicyChat = ({
         />
 
         {sorted.map((m, idx) => (
-          <Message
+          <MessageComponent
             key={`message-${idx}`}
             name={name}
             role={m.role}
-            content={
-              m.content[0] && m.content[0].type === 'text' ? m.content[0].text.value : undefined
-            }
-            createdAt={m.created_at}
-            isDebug={(m.metadata as any).type === 'debug'}
+            content={m.content}
+            createdAt={new Date(m.createdAt || new Date()).getTime()}
+            isDebug={false}
             onDiff={onDiff}
           />
         ))}
 
-        {pendingReply && <Message role="assistant" content="Thinking..." />}
+        {pendingReply && <MessageComponent role="assistant" content="Thinking..." />}
 
         <div ref={bottomRef} className="h-1" />
       </div>
@@ -107,9 +102,12 @@ export const AIPolicyChat = ({
         <form
           id="rls-chat"
           className="sticky p-5 flex-0 border-t"
-          onSubmit={form.handleSubmit((data: z.infer<typeof FormSchema>) => {
-            onSubmit(data.chat)
-          })}
+          onSubmit={(event) => {
+            // validate using react-hook-form and if succesful, trigger the form submission
+            return form.handleSubmit(() => {
+              onSubmit(event)
+            })(event)
+          }}
         >
           <FormField_Shadcn_
             control={form.control}

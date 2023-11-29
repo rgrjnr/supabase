@@ -1,7 +1,8 @@
+import { useChat } from 'ai/react'
 import { FileDiff } from 'lucide-react'
 import dynamic from 'next/dynamic'
 import { ThreadMessage } from 'openai/resources/beta/threads/messages/messages'
-import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { memo, useCallback, useEffect, useRef, useState } from 'react'
 import toast from 'react-hot-toast'
 import { Button, Modal, SheetContent_Shadcn_, SheetFooter_Shadcn_, Sheet_Shadcn_, cn } from 'ui'
 
@@ -10,12 +11,12 @@ import {
   IStandaloneDiffEditor,
 } from 'components/interfaces/SQLEditor/SQLEditor.types'
 import ConfirmationModal from 'components/ui/ConfirmationModal'
-import { useRlsSuggestMutation } from 'data/ai/rls-suggest-mutation'
 import { useRlsSuggestQuery } from 'data/ai/rls-suggest-query'
 import { useSqlDebugMutation } from 'data/ai/sql-debug-mutation'
 import { useEntityDefinitionsQuery } from 'data/database/entity-definitions-query'
 import { QueryResponseError, useExecuteSqlMutation } from 'data/sql/execute-sql-mutation'
 import { useSelectedProject, useStore } from 'hooks'
+import { BASE_PATH } from 'lib/constants'
 import { uuidv4 } from 'lib/helpers'
 import { AIPolicyChat } from './AIPolicyChat'
 import { generateThreadMessage } from './AIPolicyEditorPanel.utils'
@@ -48,12 +49,10 @@ export const AIPolicyEditorPanel = memo(function ({
 
   const [error, setError] = useState<QueryResponseError>()
   // [Joshen] Separate state here as there's a delay between submitting and the API updating the loading status
-  const [loading, setLoading] = useState(false)
   const [keepPreviousData, setKeepPreviousData] = useState(false)
   const [debugThread, setDebugThread] = useState<ThreadMessage[]>([])
   const [assistantVisible, setAssistantPanel] = useState(false)
   const [ids, setIds] = useState<{ threadId: string; runId: string } | undefined>(undefined)
-  const [isAssistantChatInputEmpty, setIsAssistantChatInputEmpty] = useState(true)
   const [incomingChange, setIncomingChange] = useState<string | undefined>(undefined)
   // used for confirmation when closing the panel with unsaved changes
   const [isClosingPolicyEditorPanel, setIsClosingPolicyEditorPanel] = useState(false)
@@ -84,20 +83,10 @@ export const AIPolicyEditorPanel = memo(function ({
 
   const entityDefinitions = entities?.map((def) => def.sql.trim())
 
-  const { mutate: addPromptMutation } = useRlsSuggestMutation({
-    onSuccess: (data) => {
-      setIds({ threadId: data.threadId, runId: data.runId })
-    },
-    onError: (error) => {
-      const threadMessage = generateThreadMessage({
-        threadId: ids?.threadId,
-        runId: ids?.runId,
-        content: error.message.includes('No OPENAI_KEY set')
-          ? `Seems like you haven't set an OPENAI_KEY in your environment variables of the dashboard. Update your .env file with that environment variable to use all the AI features of the dashboard!`
-          : error.message,
-      })
-      setDebugThread([...debugThread, threadMessage])
-      setLoading(false)
+  const { messages, input, setInput, handleSubmit, isLoading } = useChat({
+    api: `${BASE_PATH}/api/ai/sql/nesho`,
+    body: {
+      entityDefinitions,
     },
   })
 
@@ -114,30 +103,6 @@ export const AIPolicyEditorPanel = memo(function ({
   })
 
   const { mutateAsync: debugSql, isLoading: isDebugSqlLoading } = useSqlDebugMutation()
-
-  const addPrompt = useCallback(
-    (message: string) => {
-      setLoading(true)
-      if (ids?.threadId) {
-        addPromptMutation({
-          thread_id: ids?.threadId,
-          prompt: message,
-        })
-      } else {
-        addPromptMutation({
-          thread_id: ids?.threadId,
-          entityDefinitions,
-          prompt: message,
-        })
-      }
-    },
-    [addPromptMutation, entityDefinitions, ids?.threadId]
-  )
-
-  const messages = useMemo(
-    () => [...(data?.messages ?? []), ...debugThread],
-    [data?.messages, debugThread]
-  )
 
   const errorLines =
     error?.formattedError.split('\n').filter((x: string) => x.length > 0).length ?? 0
@@ -188,12 +153,12 @@ export const AIPolicyEditorPanel = memo(function ({
 
   const onClosingPanel = useCallback(() => {
     const policy = editorRef.current?.getValue()
-    if (policy || messages.length > 0 || !isAssistantChatInputEmpty) {
+    if (policy || messages.length > 0 || input.length > 0) {
       setIsClosingPolicyEditorPanel(true)
     } else {
       onSelectCancel()
     }
-  }, [onSelectCancel, messages, isAssistantChatInputEmpty])
+  }, [onSelectCancel, messages, input])
 
   const onSelectDebug = async () => {
     const policy = editorRef.current?.getValue().replaceAll('\n', ' ').replaceAll('  ', ' ')
@@ -245,10 +210,6 @@ export const AIPolicyEditorPanel = memo(function ({
       setKeepPreviousData(true)
     }
   }, [visible])
-
-  useEffect(() => {
-    if (data?.status === 'completed') setLoading(false)
-  }, [data?.status])
 
   return (
     <>
@@ -338,10 +299,10 @@ export const AIPolicyEditorPanel = memo(function ({
             <div className={cn('flex border-l grow w-full', assistantVisible && 'w-[40%]')}>
               <AIPolicyChat
                 messages={messages}
-                onSubmit={(message: string) => addPrompt(message)}
+                onSubmit={handleSubmit}
                 onDiff={onDiff}
-                onChange={setIsAssistantChatInputEmpty}
-                loading={loading || data?.status === 'loading'}
+                onChangeInput={setInput}
+                loading={isLoading}
               />
             </div>
           )}

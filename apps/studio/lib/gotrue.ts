@@ -1,7 +1,7 @@
 import { Session, User } from '@supabase/gotrue-js'
-import { gotrueClient } from 'common'
+import { gotrueClient } from 'common/gotrue'
 
-export { STORAGE_KEY } from 'common'
+export { STORAGE_KEY } from 'common/gotrue'
 
 export const auth = gotrueClient
 

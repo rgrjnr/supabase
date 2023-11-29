@@ -6,12 +6,12 @@ import Image from 'next/image'
 import { memo, useMemo } from 'react'
 import ReactMarkdown from 'react-markdown'
 import { format } from 'sql-formatter'
-import { AiIcon, AiIconAnimation, Badge, Button } from 'ui'
+import { AiIconAnimation, Badge, Button } from 'ui'
 
 import CodeEditor from 'components/ui/CodeEditor'
 import { useProfile } from 'lib/profile'
 
-const Message = memo(function Message({
+const MessageComponent = memo(function Message({
   name,
   role,
   content,
@@ -20,7 +20,7 @@ const Message = memo(function Message({
   onDiff = noop,
 }: {
   name?: string
-  role: 'user' | 'assistant'
+  role: 'function' | 'user' | 'assistant' | 'system'
   content?: string
   createdAt?: number
   isDebug?: boolean
@@ -149,4 +149,4 @@ const Message = memo(function Message({
   )
 })
 
-export default Message
+export default MessageComponent

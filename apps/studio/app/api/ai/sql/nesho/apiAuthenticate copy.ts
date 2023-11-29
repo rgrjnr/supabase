@@ -1,7 +1,9 @@
+import type { NextApiResponse } from 'next'
+// import { readOnly } from './supabaseClient'
+import { readOnly } from 'lib/api/supabaseClient'
 import { getAuth0Id, getAuthUser, getIdentity } from 'lib/gotrue'
-import type { NextApiRequest, NextApiResponse } from 'next'
+import { NextRequest } from 'next/server'
 import { SupaResponse, User } from 'types'
-import { readOnly } from './supabaseClient'
 
 /**
  * Use this method on api routes to check if user is authenticated and having required permissions.
@@ -14,23 +16,18 @@ import { readOnly } from './supabaseClient'
  * @returns {Object<user, error, description>}
  *   user null, with error and description if not authenticated or not enough permissions
  */
-export async function apiAuthenticate(
-  req: NextApiRequest,
-  res: NextApiResponse
-): Promise<SupaResponse<User>> {
+export async function apiAuthenticate(req: NextRequest): Promise<SupaResponse<User>> {
   if (!req) {
     return { error: new Error('Request is not available') } as unknown as SupaResponse<User>
   }
 
-  if (!res) {
-    return { error: new Error('Response is not available') } as unknown as SupaResponse<User>
-  }
-
-  const { slug: orgSlug, ref: projectRef } = req.query
+  const searchParams = req.nextUrl.searchParams
+  const orgSlug = searchParams.get('slug')
+  const projectRef = searchParams.get('ref')
   try {
-    const user = await fetchUser(req, res)
+    const user = await fetchUser(req)
     if (!user) {
-      return { error: new Error('The user does not exist') } as unknown as SupaResponse<User>
+      throw new Error('The user does not exist')
     }
 
     if (orgSlug || projectRef) await checkMemberPermission(req, user)
@@ -46,13 +43,13 @@ export async function apiAuthenticate(
  * @returns
  *  user with only id prop or detail object. It depends on requireUserDetail config
  */
-async function fetchUser(req: NextApiRequest, res: NextApiResponse) {
+async function fetchUser(req: NextRequest) {
   let user_id_supabase = null
   let user_id_auth0 = null
   let gotrue_id = null
   let email = null
 
-  const token = req.headers.authorization
+  const token = req.headers.get('authorization')
   if (!token) {
     throw new Error('missing access token')
   }
@@ -88,7 +85,7 @@ async function fetchUser(req: NextApiRequest, res: NextApiResponse) {
   return data
 }
 
-async function checkMemberPermission(req: NextApiRequest, user: any) {
+async function checkMemberPermission(req: NextRequest, user: any) {
   const org = await getOrganization(req)
   if (!org) {
     throw new Error('User organization does not exist')
@@ -110,8 +107,10 @@ async function checkMemberPermission(req: NextApiRequest, user: any) {
   }
 }
 
-async function getOrganization(req: NextApiRequest) {
-  const { slug: orgSlug, ref: projectRef } = req.query
+async function getOrganization(req: NextRequest) {
+  const searchParams = req.nextUrl.searchParams
+  const orgSlug = searchParams.get('slug')
+  const projectRef = searchParams.get('ref')
   if (!orgSlug && !projectRef) {
     throw new Error('Not enough info to check user permissions')
   }
