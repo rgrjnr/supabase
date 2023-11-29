@@ -73,13 +73,7 @@ const Subscription = () => {
             actions={[
               <div key="upgrade-buttons" className="space-x-3">
                 <Button asChild type="outline">
-                  <Link
-                    href={`/org/${slug}/billing?panel=${
-                      subscription.plan.id === 'free' ? 'subscriptionPlan' : 'costControl'
-                    }`}
-                  >
-                    View usage
-                  </Link>
+                  <Link href={`/org/${slug}/usage`}>View usage</Link>
                 </Button>
 
                 <Button asChild type="default">
